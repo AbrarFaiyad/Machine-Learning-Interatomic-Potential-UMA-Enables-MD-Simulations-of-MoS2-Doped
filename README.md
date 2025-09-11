@@ -1,0 +1,1 @@
+# Machine-Learning-Interatomic-Potential-UMA-Enables-MD-Simulations-of-MoS2-Doped
