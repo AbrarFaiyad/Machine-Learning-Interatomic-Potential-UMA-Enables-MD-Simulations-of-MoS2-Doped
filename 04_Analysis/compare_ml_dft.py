@@ -94,9 +94,14 @@ plt.rcParams.update({
 })
 
 
-# Load data
-ml_df = pd.read_csv("path_to_/ml_formation_energies_s.csv")
-dft_df = pd.read_csv("path_to_/dft_formation_energies.csv")
+
+# Always resolve paths relative to the repo root
+from pathlib import Path
+REPO_ROOT = Path(__file__).resolve().parent.parent
+ml_csv = REPO_ROOT / "01_DFT_MLIP_Validation" / "ml_formation_energies_s.csv"
+dft_csv = REPO_ROOT / "01_DFT_MLIP_Validation" / "dft_formation_energies.csv"
+ml_df = pd.read_csv(ml_csv)
+dft_df = pd.read_csv(dft_csv)
 
 DOPANTS = [
     'C', 'N', 'O', 'F', 'B', 'P', 'Te', 'Cl', 'Si', 'Li', 'Na', 'Al', 'Zn', 'V', 'Fe', 'Co', 'Ni', 'Cu', 'Nb', 'Ru', 'Rh', 'Pd', 'Ag', 'Cd', 'Ta', 'W', 'Re', 'Ir', 'Pt', 'Au', 'Ti'

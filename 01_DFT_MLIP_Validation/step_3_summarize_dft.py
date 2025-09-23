@@ -9,8 +9,10 @@ Run this *after* all QE jobs have finished.
 import pandas as pd
 from pathlib import Path
 
-RAW_CSV = Path("dft_energies_raw.csv")
-OUT_CSV = Path("dft_formation_energies.csv")
+from pathlib import Path
+REPO_ROOT = Path(__file__).resolve().parent.parent
+RAW_CSV = REPO_ROOT / "01_DFT_MLIP_Validation" / "dft_energies_raw.csv"
+OUT_CSV = REPO_ROOT / "01_DFT_MLIP_Validation" / "dft_formation_energies.csv"
 DOPANTS = [
     "Au", "C", "Ta", "Pd", "V", "Pt", "Ag", "Re", "Ru", "Nb", "W", "Cu", "Al", "Ir", "Rh", "Co", "Zn", "Cd", "Si", "B", "Ti",
     "N", "O", "F", "Cl", "S", "Se", "Te"

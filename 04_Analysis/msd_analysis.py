@@ -16,9 +16,12 @@ from pathlib import Path
 import pandas as pd
 import os
 
-# Configuration
-BASE_DIR = "path_to/equilibriated_structures"
-OUTPUT_DIR = "path_to/msd_results"
+
+# Always resolve paths relative to the repo root
+from pathlib import Path
+REPO_ROOT = Path(__file__).resolve().parent.parent
+BASE_DIR = REPO_ROOT / "02_MD_heating_cooling" / "equilibriated_structures"
+OUTPUT_DIR = REPO_ROOT / "04_Analysis" / "msd_results"
 
 # Specific dopants to analyze
 DOPANTS = [

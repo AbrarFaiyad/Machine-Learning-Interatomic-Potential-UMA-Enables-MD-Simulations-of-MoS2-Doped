@@ -11,9 +11,12 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from pathlib import Path
 
-# Configuration
-BASE_DIR = "/home/afaiyad/borgstore/MoS2_Omat/05_Equlibriation/equilibriated_structures_doped"
-OUTPUT_FILE = "dopant_density_comparison.png"
+
+# Always resolve paths relative to the repo root
+from pathlib import Path
+REPO_ROOT = Path(__file__).resolve().parent.parent
+BASE_DIR = REPO_ROOT / "02_MD_heating_cooling" / "equilibriated_structures_doped"
+OUTPUT_FILE = REPO_ROOT / "04_Analysis" / "dopant_density_comparison.png"
 
 # Specific dopants to analyze
 DOPANTS = [

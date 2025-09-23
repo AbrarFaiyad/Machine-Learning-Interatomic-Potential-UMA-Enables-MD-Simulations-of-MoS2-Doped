@@ -14,10 +14,16 @@ import torch
 import glob
 import os
 
-# Find input structure
+
+# Always resolve paths relative to the repo root
+import sys
+from pathlib import Path
+REPO_ROOT = Path(__file__).resolve().parent.parent
+INPUT_DIR = REPO_ROOT / "01_DFT_MLIP_Validation" / "formation_energy_structures"
+os.chdir(INPUT_DIR)
 xyz_files = glob.glob("*.xyz")
 if not xyz_files:
-    raise FileNotFoundError("No .xyz file found!")
+    raise FileNotFoundError("No .xyz file found in formation_energy_structures!")
 input_file = xyz_files[0]
 base_name = os.path.splitext(os.path.basename(input_file))[0]
 

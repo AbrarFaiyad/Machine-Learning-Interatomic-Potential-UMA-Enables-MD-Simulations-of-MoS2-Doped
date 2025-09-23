@@ -22,12 +22,15 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # ----------------- settings -------------------------------------------
-STRUCT_DIR = Path("formation_energy_structures")   # <— folder from previous script
+
+# Always resolve paths relative to the repo root
+REPO_ROOT = Path(__file__).resolve().parent.parent
+STRUCT_DIR = REPO_ROOT / "01_DFT_MLIP_Validation" / "formation_energy_structures"
 DOPANTS = [
     'C', 'N', 'F', 'B', 'Se', 'Te', 'Cl', 'Si', 'Li', 'Na', 'Al', 'Zn', 'V', 'Fe', 'Co', 'Ni', 'Cu', 'Nb', 'Ru', 'Rh', 'Pd', 'Ag', 'Cd', 'Ta', 'W', 'Re', 'Ir', 'Pt', 'Au', 'Ti', 'O'
 ]                     # extend as needed
-OUT_CSV    = "ml_formation_energies_s.csv"
-ML_OPT_DIR = Path("ml_optimized_structures")  # Store optimized structures for RDF analysis
+OUT_CSV    = REPO_ROOT / "01_DFT_MLIP_Validation" / "ml_formation_energies_s.csv"
+ML_OPT_DIR = REPO_ROOT / "01_DFT_MLIP_Validation" / "ml_optimized_structures"  # Store optimized structures for RDF analysis
 
 # ----------------- load UMA once --------------------------------------
 predictor = pretrained_mlip.get_predict_unit("uma-s-1p1", device="cuda") # Currently uses UMA small, change to uma-m-1p1 for UMA medium

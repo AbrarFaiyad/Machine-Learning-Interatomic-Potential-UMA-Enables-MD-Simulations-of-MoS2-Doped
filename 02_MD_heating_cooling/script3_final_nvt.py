@@ -14,10 +14,16 @@ import torch
 import glob
 import os
 
-# Find input structure (2_filename)
+
+# Always resolve paths relative to the repo root
+import sys
+from pathlib import Path
+REPO_ROOT = Path(__file__).resolve().parent.parent
+INPUT_DIR = REPO_ROOT / "02_MD_heating_cooling"
+os.chdir(INPUT_DIR)
 xyz_files = glob.glob("2_*.xyz")
 if not xyz_files:
-    raise FileNotFoundError("No 2_*.xyz file found!")
+    raise FileNotFoundError("No 2_*.xyz file found in 02_MD_heating_cooling!")
 input_file = xyz_files[0]
 base_name = os.path.splitext(os.path.basename(input_file))[0][2:]  # Remove "2_" prefix
 

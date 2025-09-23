@@ -20,9 +20,12 @@ from ase.build import (
 from ase.io import read, write
 
 # ----------------------------------------------------------------------
-CIF_FILE        = "../00_Structure/Mo2S4.cif"
-SUPERCELL_SIZE  = (2, 2, 1)
-OUTPUT_DIR      = Path("formation_energy_structures")
+
+# Always resolve paths relative to the repo root
+REPO_ROOT = Path(__file__).resolve().parent.parent
+CIF_FILE = REPO_ROOT / "00_Structure" / "Mo2S4.cif"
+SUPERCELL_SIZE = (2, 2, 1)
+OUTPUT_DIR = Path(__file__).resolve().parent / "formation_energy_structures"
 
 DOPANTS = [
     'C', 'N', 'O', 'F', 'B', 'P', 'Se', 'Te', 'Cl', 'Si', 'Li', 'Na', 'Al', 'Zn', 'V', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Nb', 'Ru', 'Rh', 'Pd', 'Ag', 'Cd', 'Ta', 'W', 'Re', 'Ir', 'Pt', 'Au', 'Ti'

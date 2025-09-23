@@ -15,8 +15,10 @@ from ase.io import read
 from ase.calculators.espresso import Espresso, EspressoProfile
 from openbabel import pybel
 
-# ------------------- cluster / QE settings ----------------------------
-PSEUDO_DIR = "path_to_/pslibrary.1.0.0/pbe/PSEUDOPOTENTIALS"  # get pseudopotentials from https://github.com/dalcorso/pslibrary
+
+# Always resolve paths relative to the repo root
+REPO_ROOT = Path(__file__).resolve().parent.parent
+PSEUDO_DIR = str(REPO_ROOT / "pseudopotentials")  # Place your pseudopotentials here
 NPROCS     = int(os.environ.get("SLURM_NTASKS", "56"))
 
 KPTS       = (6, 6, 4) # (3, 3, 2) / 'gamma' # k-point mesh for better sampling
@@ -176,7 +178,7 @@ for f in ["espresso.pwo","espresso.pwi","espresso.err"]:
         shutil.copy2(f, f"{name}_{f}")
 
 # ------------------- append to master CSV (thread‑safe) ---------------
-master = Path("..")/"dft_energies_raw.csv"
+master = REPO_ROOT / "01_DFT_MLIP_Validation" / "dft_energies_raw.csv"
 header = ["structure","n_atoms","energy"]
 row    = [name,len(atoms),energy]
 
