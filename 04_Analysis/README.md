@@ -112,4 +112,3 @@ Performs bond and clustering analysis to determine how dopant atoms interact and
 ---
 
 For more details on each script's options and configuration, see the comments and docstrings within each file.
-# Machine-Learning-Interatomic-Potential-UMA-Enables-MD-Simulations-of-MoS2-Doped
