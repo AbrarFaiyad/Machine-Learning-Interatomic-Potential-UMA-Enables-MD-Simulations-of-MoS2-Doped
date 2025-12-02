@@ -9,6 +9,8 @@ All original notebooks, scripts, and inputs have been preserved under `.old/`.
 
 ## Installation
 
+It is recommended to create a new conda environment before installing the package to avoid conflicts. 
+
 ```bash
 pip install -e .
 ```
