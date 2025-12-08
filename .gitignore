@@ -62,3 +62,4 @@ CRASH
 # OS
 .DS_Store
 Thumbs.db
+.old/
