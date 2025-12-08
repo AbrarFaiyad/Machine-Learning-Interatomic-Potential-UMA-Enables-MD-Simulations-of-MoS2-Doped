@@ -5,7 +5,10 @@ preprint into reusable modules. It provides structure generation, Quantum
 ESPRESSO setup helpers, UMA/OMat24 MLIP optimisation, modular MD workflows, and
 formation-energy post-processing.
 
-All original notebooks, scripts, and inputs have been preserved under `.old/`.
+Main paper- 
+```
+https://arxiv.org/abs/2510.05339
+```
 
 ## Installation
 
@@ -71,11 +74,6 @@ Generate structures for specific dopants only:
 mos2doped generate-structures --dopants Fe Cu Au Pt --output selected_dopants
 ```
 
-Include radioactive elements:
-
-```bash
-mos2doped generate-structures --include-radioactive --output all_elements
-```
 
 ### Optimise structures
 
@@ -96,7 +94,7 @@ mos2doped qe-relax formation_energy_structures/MoS2_50.xyz /path/to/pseudos --sa
 Summarise raw QE energies into a formation-energy table:
 
 ```bash
-mos2doped summarise-dft .old/01_DFT_MLIP_Validation/dft_energies_raw.csv dft_formation.csv
+mos2doped summarise-dft qe_energies.csv dft_formation.csv
 ```
 
 Run a custom MD schedule described in JSON (or YAML if ``pyyaml`` is installed):
@@ -137,5 +135,3 @@ The package includes Materials Project CIF files for ~80 elements with zero
 energy above hull (thermodynamically stable structures). By default, only 
 non-radioactive elements are used for doping. Use `--list-elements` to see 
 all available elements.
-
-Refer to `.old/` for the unmodified scripts and notebooks from the preprint.
