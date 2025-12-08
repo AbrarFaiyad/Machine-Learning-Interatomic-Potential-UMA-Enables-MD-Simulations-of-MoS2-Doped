@@ -20,6 +20,8 @@ class MLOutput:
     n_atoms: int
     energy: float
     path: Path
+    converged: bool = True
+    error_message: str = ""
 
 
 def load_calculator(device: str | None = None):
@@ -34,17 +36,45 @@ def load_calculator(device: str | None = None):
 
 
 def optimise_structure(path: Path | str, calculator=None, fmax: float = 0.005) -> Tuple[MLOutput, object]:
-    """Relax atomic positions with the supplied calculator and return energies."""
+    """Relax atomic positions with the supplied calculator and return energies.
+    
+    If optimization fails, returns MLOutput with converged=False and error_message set.
+    """
 
-    atoms = read(path)
-    atoms.info.update({"spin": 2, "charge": 0})
-    atoms.calc = calculator or load_calculator()
+    path_obj = Path(path)
+    
+    try:
+        atoms = read(path_obj)
+        atoms.info.update({"spin": 2, "charge": 0})
+        atoms.calc = calculator or load_calculator()
 
-    opt = BFGS(FrechetCellFilter(atoms), trajectory=None)
-    opt.run(fmax=fmax, steps=10000)
-    energy = atoms.get_potential_energy()
-    output = MLOutput(structure=Path(path).stem, n_atoms=len(atoms), energy=float(energy), path=Path(path))
-    return output, atoms
+        opt = BFGS(FrechetCellFilter(atoms), trajectory=None)
+        opt.run(fmax=fmax, steps=10000)
+        energy = atoms.get_potential_energy()
+        output = MLOutput(
+            structure=path_obj.stem,
+            n_atoms=len(atoms),
+            energy=float(energy),
+            path=path_obj,
+            converged=True,
+            error_message=""
+        )
+        return output, atoms
+    
+    except Exception as error:
+        # Return failed output with error details for debugging
+        error_msg = f"{type(error).__name__}: {str(error)}"
+        print(f"⚠️  Failed to optimize {path_obj.name}: {error_msg}")
+        
+        output = MLOutput(
+            structure=path_obj.stem,
+            n_atoms=0,
+            energy=0.0,
+            path=path_obj,
+            converged=False,
+            error_message=error_msg
+        )
+        return output, None
 
 
 def radial_distribution(atoms, r_max: float = 10.0, n_bins: int = 100) -> Tuple[np.ndarray, np.ndarray]:
@@ -74,7 +104,10 @@ def optimise_directory(
     calculator=None,
     fmax: float = 0.005,
 ) -> Tuple[List[MLOutput], Dict[str, np.ndarray]]:
-    """Optimise every ``.xyz`` file and return energy + RDF summaries."""
+    """Optimise every ``.xyz`` file and return energy + RDF summaries.
+    
+    Skips structures that fail to optimize and tracks them in the output list.
+    """
 
     structure_dir = Path(structure_dir)
     output_dir = Path(output_dir)
@@ -83,12 +116,25 @@ def optimise_directory(
 
     energies: List[MLOutput] = []
     rdfs: Dict[str, np.ndarray] = {}
+    failed_structures = []
 
     for path in sorted(structure_dir.glob("*.xyz")):
         result, atoms = optimise_structure(path, calculator=calculator, fmax=fmax)
-        dest = output_dir / f"{result.structure}_ml_opt.xyz"
-        write(dest, atoms)
-        rdf, r_centres = radial_distribution(atoms)
         energies.append(result)
-        rdfs[result.structure] = np.vstack([r_centres, rdf])
+        
+        if result.converged and atoms is not None:
+            dest = output_dir / f"{result.structure}_ml_opt.xyz"
+            write(dest, atoms)
+            rdf, r_centres = radial_distribution(atoms)
+            rdfs[result.structure] = np.vstack([r_centres, rdf])
+            print(f"✓ {result.structure}: {result.energy:.6f} eV")
+        else:
+            failed_structures.append((result.structure, result.error_message))
+            print(f"✗ {result.structure}: {result.error_message}")
+    
+    if failed_structures:
+        print(f"\n⚠️  {len(failed_structures)} structure(s) failed to optimize:")
+        for name, error in failed_structures:
+            print(f"  - {name}: {error}")
+    
     return energies, rdfs

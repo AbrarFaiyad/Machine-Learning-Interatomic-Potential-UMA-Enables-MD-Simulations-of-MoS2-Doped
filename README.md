@@ -9,15 +9,38 @@ All original notebooks, scripts, and inputs have been preserved under `.old/`.
 
 ## Installation
 
-It is recommended to create a new conda environment before installing the package to avoid conflicts. 
+It is recommended to create a new conda environment before installing the package to avoid conflicts.
+
+### Prerequisites
+1. fairchem-core
+2. QuantumEspresso
+
+### Clone the repository
+
+```bash
+git clone https://github.com/yourusername/Machine-Learning-Interatomic-Potential-UMA-Enables-MD-Simulations-of-MoS2-Doped.git
+cd Machine-Learning-Interatomic-Potential-UMA-Enables-MD-Simulations-of-MoS2-Doped
+```
+
+### Install dependencies
+
+**fairchem-core:**
+```bash
+pip install fairchem-core
+```
+
+**Quantum Espresso:**
+
+Install directly from the website:
+```
+https://www.quantum-espresso.org/
+```
+
+### Install the package
 
 ```bash
 pip install -e .
 ```
-
-Optional extras:
-
-- MLIP support: `pip install -e .[ml]`
 
 ## Quick start
 
