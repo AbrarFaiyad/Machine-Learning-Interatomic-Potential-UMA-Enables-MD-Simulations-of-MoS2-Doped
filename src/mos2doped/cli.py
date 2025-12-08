@@ -17,7 +17,15 @@ from .md import load_calculator as load_md_calculator
 from .md import sequential_workflow
 from .ml import load_calculator as load_ml_calculator
 from .ml import optimise_directory, radial_distribution
-from .structures import DEFAULT_DOPANTS, generate_structure_set
+from .structures import (
+    DEFAULT_DOPANTS,
+    NON_RADIOACTIVE_ELEMENTS,
+    AVAILABLE_ELEMENTS,
+    RADIOACTIVE_ELEMENTS,
+    generate_structure_set,
+    get_available_elements,
+    reference_structure,
+)
 
 
 def write_energy_rows(rows: Iterable[dict], output: Path, append: bool = False) -> Path:
@@ -43,9 +51,31 @@ def load_workflow_file(path: Path) -> Sequence[dict]:
 
 
 def cmd_generate(args: argparse.Namespace) -> None:
+    if args.list_elements:
+        print("Available elements (from Materials Project CIF files):")
+        print(f"  Total: {len(AVAILABLE_ELEMENTS)}")
+        print(f"  Non-radioactive: {len(NON_RADIOACTIVE_ELEMENTS)}")
+        print(f"\nNon-radioactive elements:")
+        print(f"  {', '.join(NON_RADIOACTIVE_ELEMENTS)}")
+        print(f"\nRadioactive elements in data folder:")
+        radioactive_available = [el for el in AVAILABLE_ELEMENTS if el in RADIOACTIVE_ELEMENTS]
+        print(f"  {', '.join(radioactive_available) if radioactive_available else 'None'}")
+        return
+    
     repeat = tuple(args.repeat)
-    generate_structure_set(dopants=args.dopants, cif=args.cif, output_dir=args.output, repeat=repeat)
+    dopants = args.dopants
+    
+    # Handle special dopant options
+    if args.all_elements:
+        dopants = [el for el in AVAILABLE_ELEMENTS if el not in {"Mo", "S"}]
+        print(f"Using all {len(dopants)} available elements as dopants")
+    elif args.include_radioactive:
+        dopants = [el for el in AVAILABLE_ELEMENTS if el not in {"Mo", "S"}]
+        print(f"Using all {len(dopants)} elements (including radioactive) as dopants")
+    
+    generate_structure_set(dopants=dopants, cif=args.cif, output_dir=args.output, repeat=repeat)
     print(f"Structures written to {Path(args.output).resolve()}")
+    print(f"Generated structures for {len(dopants)} dopant elements")
 
 
 def cmd_qe_relax(args: argparse.Namespace) -> None:
@@ -140,8 +170,15 @@ def build_parser() -> argparse.ArgumentParser:
     gen = subparsers.add_parser("generate-structures", help="Create pristine + doped structures")
     gen.add_argument("--cif", type=Path, help="Optional CIF to override the bundled Mo2S4.cif")
     gen.add_argument("--output", type=Path, default=Path("formation_energy_structures"))
-    gen.add_argument("--dopants", nargs="*", default=DEFAULT_DOPANTS)
+    gen.add_argument("--dopants", nargs="*", default=DEFAULT_DOPANTS,
+                     help="List of dopant elements (default: all non-radioactive elements)")
     gen.add_argument("--repeat", nargs=3, type=int, default=(2, 2, 1), help="Supercell repeat (abc)")
+    gen.add_argument("--all-elements", action="store_true",
+                     help="Use all available elements as dopants (excluding Mo and S)")
+    gen.add_argument("--include-radioactive", action="store_true",
+                     help="Include radioactive elements in dopant list")
+    gen.add_argument("--list-elements", action="store_true",
+                     help="List all available elements and exit")
     gen.set_defaults(func=cmd_generate)
 
     qe = subparsers.add_parser("qe-relax", help="Run a QE vc-relax calculation for one XYZ")
