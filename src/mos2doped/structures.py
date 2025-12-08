@@ -3,16 +3,20 @@
 This module consolidates the logic from ``step_1_structure_maker.py``
 into reusable functions. All paths are decoupled from the working
 folder so the functions can be called from Python code or the CLI.
+
+Elemental reference structures are loaded from CIF files in the data folder,
+which contain Materials Project structures with zero energy above hull.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Iterable, List, Sequence, Tuple
+from typing import Dict, Iterable, List, Optional, Tuple
+import glob
 
 import numpy as np
 from ase import Atom, Atoms
-from ase.build import bulk, make_supercell, molecule
+from ase.build import make_supercell
 from ase.io import read, write
 
 DATA_DIR = Path(__file__).resolve().parent / "data"
@@ -22,74 +26,37 @@ DEFAULT_CIF = DATA_DIR / "Mo2S4.cif"
 # representation before building the supercell.
 STRUCTURE_TRANSFORM = np.array([[1, -1, 0], [1, 1, 0], [0, 0, 1]])
 
-DEFAULT_DOPANTS: List[str] = [
-    "C",
-    "N",
-    "O",
-    "F",
-    "B",
-    "P",
-    "Se",
-    "Te",
-    "Cl",
-    "Si",
-    "Li",
-    "Na",
-    "Al",
-    "Zn",
-    "V",
-    "Mn",
-    "Fe",
-    "Co",
-    "Ni",
-    "Cu",
-    "Nb",
-    "Ru",
-    "Rh",
-    "Pd",
-    "Ag",
-    "Cd",
-    "Ta",
-    "W",
-    "Re",
-    "Ir",
-    "Pt",
-    "Au",
-    "Ti",
+# Build a lookup of available elemental CIF files from the data folder
+# Pattern: {Element}_mp-{id}.cif (e.g., Fe_mp-13.cif, Au_mp-81.cif)
+ELEMENT_CIF_LOOKUP: Dict[str, Path] = {}
+
+for cif_file in DATA_DIR.glob("*_mp-*.cif"):
+    # Extract element symbol from filename (e.g., "Fe" from "Fe_mp-13.cif")
+    element = cif_file.stem.split("_mp-")[0]
+    # Skip multi-element compounds like Mo2S4
+    if element.isalpha() and element[0].isupper():
+        ELEMENT_CIF_LOOKUP[element] = cif_file
+
+# List of available elements for reference
+AVAILABLE_ELEMENTS = sorted(ELEMENT_CIF_LOOKUP.keys())
+
+# Radioactive elements to exclude from default dopants
+RADIOACTIVE_ELEMENTS = {
+    "Tc", "Pm", "Po", "At", "Rn", "Fr", "Ra", "Ac", "Th", "Pa", 
+    "U", "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm", "Md", 
+    "No", "Lr", "Rf", "Db", "Sg", "Bh", "Hs", "Mt", "Ds", "Rg",
+    "Cn", "Nh", "Fl", "Mc", "Lv", "Ts", "Og"
+}
+
+# Non-radioactive elements available in the data folder
+NON_RADIOACTIVE_ELEMENTS = [
+    el for el in AVAILABLE_ELEMENTS if el not in RADIOACTIVE_ELEMENTS
 ]
 
-LAT_LOOKUP: Dict[str, Tuple[str, float]] = {
-    "Mo": ("bcc", 3.15),
-    "Nb": ("bcc", 3.30),
-    "Ta": ("bcc", 3.30),
-    "W": ("bcc", 3.16),
-    "V": ("bcc", 3.03),
-    "Fe": ("bcc", 2.87),
-    "Cu": ("fcc", 3.61),
-    "Ag": ("fcc", 4.09),
-    "Au": ("fcc", 4.08),
-    "Ni": ("fcc", 3.52),
-    "Pd": ("fcc", 3.89),
-    "Pt": ("fcc", 3.92),
-    "Al": ("fcc", 4.05),
-    "Ir": ("fcc", 3.84),
-    "Rh": ("fcc", 3.80),
-    "Ti": ("hcp", 2.95),
-    "Co": ("hcp", 2.51),
-    "Zn": ("hcp", 2.66),
-    "Cd": ("hcp", 2.98),
-    "Ru": ("hcp", 2.71),
-    "Re": ("hcp", 2.76),
-    "C": ("diamond", 3.57),
-    "Si": ("diamond", 5.43),
-    "B": ("diamond", 4.75),
-    "Se": ("hcp", 4.36),
-    "Te": ("hcp", 4.45),
-    "Na": ("bcc", 4.23),
-    "Li": ("bcc", 3.49),
-    "Mn": ("bcc", 8.91),
-}
-DIATOMIC = {"N", "O", "F", "Cl", "S"}
+# Default dopants: all non-radioactive elements except Mo and S (the host elements)
+DEFAULT_DOPANTS: List[str] = [
+    el for el in NON_RADIOACTIVE_ELEMENTS if el not in {"Mo", "S"}
+]
 
 
 @dataclass
@@ -112,7 +79,6 @@ def load_host_structure(cif: Path | str | None = None) -> Atoms:
         Optional custom CIF path. When omitted the bundled Mo2S4.cif is
         used.
     """
-
     cif_path = Path(cif) if cif else DEFAULT_CIF
     return read(cif_path)
 
@@ -124,7 +90,6 @@ def build_supercell(
 ) -> Atoms:
     """Convert the hexagonal cell to an orthorhombic representation and
     expand it to a 50-atom supercell."""
-
     ortho = make_supercell(atoms, transform)
     sup = ortho.repeat(repeat)
     sup.set_pbc(True)
@@ -132,58 +97,73 @@ def build_supercell(
 
 
 def reference_structure(element: str) -> Atoms:
-    """Return an ASE :class:`Atoms` object for the elemental reference."""
-
+    """Return an ASE Atoms object for the elemental reference.
+    
+    Loads the structure from the Materials Project CIF files in the data folder.
+    If the structure has only 1 atom, it is replicated 2x1x1 to ensure
+    proper periodic boundary conditions.
+    
+    Parameters
+    ----------
+    element : str
+        Element symbol (e.g., 'Fe', 'Au', 'C')
+    
+    Returns
+    -------
+    Atoms
+        ASE Atoms object for the elemental reference structure
+    
+    Raises
+    ------
+    ValueError
+        If the element is not found in the data folder
+    """
     symbol = element.capitalize()
+    
+    # Special case for two-letter elements like 'Se', 'Te', etc.
+    if len(element) == 2:
+        symbol = element[0].upper() + element[1].lower()
+    
+    if symbol not in ELEMENT_CIF_LOOKUP:
+        available = ", ".join(sorted(ELEMENT_CIF_LOOKUP.keys())[:10]) + "..."
+        raise ValueError(
+            f"Element '{symbol}' not found in data folder. "
+            f"Available elements: {available}"
+        )
+    
+    cif_path = ELEMENT_CIF_LOOKUP[symbol]
+    atoms = read(cif_path)
+    
+    # If structure has only 1 atom, replicate 2x1x1
+    if len(atoms) == 1:
+        atoms = atoms.repeat((2, 1, 1))
+    
+    atoms.set_pbc(True)
+    return atoms
 
-    if symbol in DIATOMIC:
-        box = 12.0
-        if symbol == "S":
-            s8_coords = np.array(
-                [
-                    [2.05, 0.00, 0.00],
-                    [0.63, 1.93, 0.00],
-                    [-1.66, 1.19, 0.00],
-                    [-1.66, -1.19, 0.00],
-                    [0.63, -1.93, 0.00],
-                    [3.68, -1.19, 0.00],
-                    [3.68, 1.19, 0.00],
-                    [2.05, 2.38, 0.00],
-                ]
-            )
-            mol = Atoms("S8", positions=s8_coords)
-            mol.set_cell([box, box, box])
-            mol.center()
-            return mol
-        mol = molecule(f"{symbol}2")
-        mol.set_cell([box, box, box])
-        mol.center()
-        return mol
 
-    if symbol == "P":
-        box = 12.0
-        a = 2.21
-        coords = [[a, a, a], [-a, -a, a], [-a, a, -a], [a, -a, -a]]
-        mol = Atoms("P4", positions=coords)
-        mol.set_cell([box, box, box])
-        mol.center()
-        return mol
+def get_available_elements() -> List[str]:
+    """Return a list of all available elements in the data folder."""
+    return AVAILABLE_ELEMENTS.copy()
 
-    if symbol in LAT_LOOKUP:
-        phase, a = LAT_LOOKUP[symbol]
-        if phase == "bcc":
-            return bulk(symbol, "bcc", a=a, cubic=True)
-        if phase == "fcc":
-            return bulk(symbol, "fcc", a=a, cubic=True)
-        if phase == "hcp":
-            return bulk(symbol, "hcp", a=a, c=1.633 * a)
-        if phase == "diamond":
-            return bulk(symbol, "diamond", a=a, cubic=True)
 
-    box = 12.0
-    at = Atoms(symbol, cell=[box, box, box], pbc=False)
-    at.center()
-    return at
+def get_element_cif_path(element: str) -> Optional[Path]:
+    """Get the CIF file path for a given element.
+    
+    Parameters
+    ----------
+    element : str
+        Element symbol
+    
+    Returns
+    -------
+    Path or None
+        Path to the CIF file, or None if not found
+    """
+    symbol = element.capitalize()
+    if len(element) == 2:
+        symbol = element[0].upper() + element[1].lower()
+    return ELEMENT_CIF_LOOKUP.get(symbol)
 
 
 def make_derivatives(cell: Atoms, dopant: str) -> Tuple[Atoms, Atoms, Atoms]:
@@ -245,6 +225,9 @@ def generate_structure_set(
     """Generate pristine, defect, and reference structures.
 
     Returns the locations of all outputs to enable downstream processing.
+    
+    Reference structures are loaded from Materials Project CIF files in the
+    data folder. If a structure has only 1 atom, it is replicated 2x1x1.
     """
 
     output_path = Path(output_dir)
@@ -259,20 +242,26 @@ def generate_structure_set(
         sulfur_sub, molybdenum_sub, intercalated = make_derivatives(host_atoms, dopant)
         outputs.append(write_structures(dopant, output_path, sulfur_sub, molybdenum_sub, intercalated))
 
+    # Generate reference structures from CIF files
     references: Dict[str, Path] = {}
     all_elements = set(dopants) | {"Mo", "S"}
+    
     for element in sorted(all_elements):
-        ref_atoms = reference_structure(element)
-        if element in DIATOMIC:
-            name = f"{element}2_box.xyz"
-        elif element in LAT_LOOKUP:
-            phase, _ = LAT_LOOKUP[element]
-            name = f"{element}_{phase}.xyz"
-        else:
-            name = f"{element}_atom_box.xyz"
-        ref_path = output_path / name
-        write(ref_path, ref_atoms)
-        references[element] = ref_path
+        try:
+            ref_atoms = reference_structure(element)
+            # Use material project ID in filename
+            cif_path = get_element_cif_path(element)
+            if cif_path:
+                mp_id = cif_path.stem.split("_")[1]  # e.g., "mp-13" from "Fe_mp-13"
+                name = f"{element}_{mp_id}.xyz"
+            else:
+                name = f"{element}_ref.xyz"
+            
+            ref_path = output_path / name
+            write(ref_path, ref_atoms)
+            references[element] = ref_path
+        except ValueError as e:
+            print(f"Warning: Could not generate reference for {element}: {e}")
 
     if outputs:
         outputs[0].references.update(references)
