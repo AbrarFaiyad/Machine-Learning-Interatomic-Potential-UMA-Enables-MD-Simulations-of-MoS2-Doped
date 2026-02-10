@@ -81,7 +81,7 @@ Optimise all structures in a folder with UMA/OMat24 and write optimised XYZ
 files + RDF arrays:
 
 ```bash
-mos2doped ml-opt formation_energy_structures ml_optimised
+mos2doped ml-opt formation_energy_structures ml_optimised --save ml_energy.csv
 ```
 
 Relax a single structure with Quantum ESPRESSO and log its energy to a CSV:

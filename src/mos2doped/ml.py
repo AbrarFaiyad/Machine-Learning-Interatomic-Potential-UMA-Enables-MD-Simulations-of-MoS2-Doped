@@ -45,10 +45,10 @@ def optimise_structure(path: Path | str, calculator=None, fmax: float = 0.005) -
     
     try:
         atoms = read(path_obj)
-        atoms.info.update({"spin": 2, "charge": 0})
+        atoms.info.update({"spin": 1, "charge": 0})
         atoms.calc = calculator or load_calculator()
 
-        opt = BFGS(FrechetCellFilter(atoms), trajectory=None)
+        opt = BFGS(atoms, trajectory=None)
         opt.run(fmax=fmax, steps=10000)
         energy = atoms.get_potential_energy()
         output = MLOutput(
