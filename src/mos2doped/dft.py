@@ -121,7 +121,7 @@ def run_relaxation(
     pseudo_table: Dict[str, str] | None = None,
     profile_command: str | None = None,
 ) -> QERunResult:
-    """Run a vc-relax calculation with ASE's Espresso calculator.
+    """Run a relax calculation with ASE's Espresso calculator.
 
     The function keeps the procedural defaults from ``step_2_run_qe_single.py``
     but is library-friendly: all paths are arguments and the caller may
