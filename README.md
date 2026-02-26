@@ -7,7 +7,10 @@ formation-energy post-processing.
 
 Main paper- 
 ```
-https://arxiv.org/abs/2510.05339
+@JCTC https://pubs.acs.org/doi/full/10.1021/acs.jctc.5c02004
+```
+```
+@arxiv https://arxiv.org/abs/2510.05339
 ```
 
 ## Installation
